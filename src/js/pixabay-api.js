@@ -4,37 +4,48 @@ import axios from 'axios';
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 
-export default function getImagesByQuery(query, perPage = 3) {
-  const params = new URLSearchParams({
-    key: '50818720-8fed735658e97652981a6ffe2',
+export default async function getImagesByQuery(query, perPage = 3, page = 1) {
+  const API_URL = 'https://pixabay.com/api/';
+  const API_KEY = '50818720-8fed735658e97652981a6ffe2';
+
+  if (!query || typeof query !== 'string' || query.trim() === '') {
+    iziToast.error({
+      title: 'Error',
+      message: 'Please enter a valid search query.',
+      position: 'topRight',
+    });
+    return { hits: [], totalHits: 0 };
+  }
+
+  const params = {
+    key: API_KEY,
     q: query,
     image_type: 'photo',
     per_page: perPage,
+    page,
     orientation: 'horizontal',
     safesearch: true,
-  });
-  const api = 'https://pixabay.com/api/';
+  };
 
-  return axios(`${api}?${params}`)
-    .then(response => {
-      const { hits } = response.data;
-      if (hits.length === 0) {
-        iziToast.error({
-          title: 'Error',
-          message:
-            'Sorry, there are no images matching your search query. Please try again!',
-          position: 'topRight',
-        });
-        return [];
-      }
-      return hits;
-    })
-    .catch(error => {
+  try {
+    const response = await axios(API_URL, { params });
+    const { hits, totalHits } = response.data;
+    if (hits.length === 0) {
       iziToast.error({
         title: 'Error',
-        message: `An error occurred: ${error.message}`,
+        message:
+          'Sorry, there are no images matching your search query. Please try again!',
         position: 'topRight',
       });
-      return [];
+      return { hits: [], totalHits: 0 };
+    }
+    return { hits, totalHits };
+  } catch (error) {
+    iziToast.error({
+      title: 'Error',
+      message: `An error occurred: ${error.message}`,
+      position: 'topRight',
     });
+    return { hits: [], totalHits: 0 };
+  }
 }
