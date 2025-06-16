@@ -2,15 +2,7 @@
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 
-import {
-  createGallery,
-  clearGallery,
-  showLoader,
-  hideLoader,
-  showLoadMoreButton,
-  hideLoadMoreButton,
-  smoothScroll,
-} from './js/render-functions.js';
+import {createGallery, clearGallery, showLoader, hideLoader, showLoadMoreButton, hideLoadMoreButton, smoothScroll, } from './js/render-functions.js';
 import getImagesByQuery from './js/pixabay-api';
 
 let page = 1;
@@ -22,9 +14,10 @@ const form = document.querySelector('.form');
 const searchBtn = document.querySelector('.button');
 const loadMoreBtn = document.querySelector('.load-more');
 
-form.addEventListener('submit', event => {
-  searchBtn.disabled = true;
+form.addEventListener('submit', async event => {
   event.preventDefault();
+  searchBtn.disabled = true;
+
   page = 1;
   totalHits = 0;
 
@@ -33,68 +26,74 @@ form.addEventListener('submit', event => {
 
   const totalHitsElement = document.querySelector('.total-hits span');
   const query = document.querySelector('[name="search-text"]').value.trim();
+  if (!query) {
+    iziToast.warning({
+      title: 'Warning',
+      message: 'Please enter a search query.',
+      position: 'topRight',
+    });
+    hideLoader();
+    searchBtn.disabled = false;
+    return;
+  }
   perPage = Number(document.querySelector('[name="per-page"]').value);
   if (!perPage || perPage <= 0) {
-    perPage = 3;
+    perPage = 6;
   }
 
-  getImagesByQuery(query, perPage, page)
-    .then(({ hits, totalHits: match }) => {
-      totalHits = match;
-      userQuery = query;
-      totalHitsElement.textContent = totalHits;
+  try {
+    const { hits, totalHits: match } = await getImagesByQuery(query, perPage, page);
+    totalHits = match;
+    userQuery = query;
+    totalHitsElement.textContent = totalHits;
 
-      createGallery(hits);
-      if (totalHits > perPage) {
-        showLoadMoreButton();
-      } else {
-        hideLoadMoreButton();
-      }
-    })
+    createGallery(hits);
 
-    .catch(error => {
-      iziToast.error({
-        title: 'Error',
-        message: `An error occurred: ${error.message}`,
-        position: 'topRight',
-      });
-    })
-
-    .finally(() => {
-      hideLoader();
-      form.reset();
-      searchBtn.disabled = false;
+    if (totalHits > perPage) {
+      showLoadMoreButton();
+    } else {
+      hideLoadMoreButton();
+    }
+  } catch (error) {
+    iziToast.error({
+      title: 'Error',
+      message: `An error occurred: ${error.message}`,
+      position: 'topRight',
     });
+  } finally {
+    hideLoader();
+    searchBtn.disabled = false;
+    form.reset();
+  }
 });
 
-loadMoreBtn.addEventListener('click', () => {
+loadMoreBtn.addEventListener('click', async () => {
   loadMoreBtn.disabled = true;
   page += 1;
-  showLoader();
-  getImagesByQuery(userQuery, perPage, page)
-    .then(({ hits }) => {
-      createGallery(hits);
-      smoothScroll();
-      if (page * perPage >= totalHits) {
-        hideLoadMoreButton();
-        iziToast.info({
-          title: 'Info',
-          message: "We're sorry, but you've reached the end of search results.",
-          position: 'topRight',
-        });
-      }
-    })
 
-    .catch(error => {
-      iziToast.error({
-        title: 'Error',
-        message: `An error occurred: ${error.message}`,
+  showLoader();
+
+  try {
+    const { hits } = await getImagesByQuery(userQuery, perPage, page);
+    createGallery(hits);
+
+    if (page * perPage >= totalHits) {
+      hideLoadMoreButton();
+      iziToast.info({
+        title: 'Info',
+        message: "We're sorry, but you've reached the end of search results.",
         position: 'topRight',
       });
-    })
-    
-    .finally(() => {
-      hideLoader();
-      loadMoreBtn.disabled = false;
+    }
+    smoothScroll();
+  } catch (error) {
+    iziToast.error({
+      title: 'Error',
+      message: `An error occurred: ${error.message}`,
+      position: 'topRight',
     });
+  } finally {
+    hideLoader();
+    loadMoreBtn.disabled = false;
+  }
 });

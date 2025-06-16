@@ -89,7 +89,7 @@ export function smoothScroll() {
     const cardHeight = card.getBoundingClientRect().height + 48;
 
     window.scrollBy({
-      top: cardHeight * 3,
+      top: cardHeight * 2,
       behavior: 'smooth',
     });
   }, 300);

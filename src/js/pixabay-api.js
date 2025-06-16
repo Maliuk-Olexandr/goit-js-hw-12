@@ -8,16 +8,7 @@ export default async function getImagesByQuery(query, perPage = 3, page = 1) {
   const API_URL = 'https://pixabay.com/api/';
   const API_KEY = '50818720-8fed735658e97652981a6ffe2';
 
-  if (!query || typeof query !== 'string' || query.trim() === '') {
-    iziToast.error({
-      title: 'Error',
-      message: 'Please enter a valid search query.',
-      position: 'topRight',
-    });
-    return { hits: [], totalHits: 0 };
-  }
-
-  const params = {
+    const params = {
     key: API_KEY,
     q: query,
     image_type: 'photo',
